@@ -49,11 +49,11 @@ export default function ChatPage() {
   return (
     <div className="flex h-screen flex-col bg-background">
       {/* Main chat area */}
-      <div className="flex-1 overflow-y-auto px-4 pb-32 pt-6 sm:px-6">
+      <div className="flex-1 overflow-y-auto px-4 pb-36 pt-6 sm:px-6">
         {messages.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className="mx-auto w-full max-w-3xl">
+          <div className="mx-auto w-full max-w-4xl">
             {messages.map((message) => (
               <ChatMessage key={message.id} message={message} />
             ))}

@@ -41,15 +41,15 @@ export default function ChatInput({ onSend, isLoading }: ChatInputProps) {
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center bg-gradient-to-t from-background via-background/95 to-background/40">
-      <div className="w-full max-w-3xl px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+      <div className="w-full max-w-4xl px-4 pt-5 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] sm:px-6">
         <form
           onSubmit={(e) => {
             e.preventDefault();
             submit();
           }}
-          className="rounded-3xl border bg-card/70 p-2 shadow-lg ring-1 ring-border backdrop-blur transition focus-within:ring-2 focus-within:ring-primary supports-[backdrop-filter]:bg-card/60"
+          className="space-y-2 rounded-3xl border bg-card/70 p-3 shadow-lg ring-1 ring-border backdrop-blur transition focus-within:ring-2 focus-within:ring-primary supports-[backdrop-filter]:bg-card/60"
         >
-          <div className="flex items-center gap-4 rounded-2xl bg-muted/40 pl-5 pr-2 py-2.5">
+          <div className="flex items-center gap-4 rounded-2xl bg-muted/40 px-5 py-3">
             <textarea
               ref={textareaRef}
               value={value}
@@ -58,7 +58,7 @@ export default function ChatInput({ onSend, isLoading }: ChatInputProps) {
               placeholder="Tanyakan tentang peraturan..."
               disabled={isLoading}
               rows={1}
-              className="min-h-10 max-h-40 flex-1 resize-none bg-transparent px-1 py-0 text-base leading-6 text-foreground placeholder:text-muted-foreground/80 outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:text-lg"
+              className="min-h-10 max-h-40 flex-1 resize-none bg-transparent px-2 py-0 text-base leading-6 text-foreground placeholder:text-muted-foreground/80 outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:px-3 sm:text-lg"
             />
             <button
               type="submit"
@@ -81,7 +81,6 @@ export default function ChatInput({ onSend, isLoading }: ChatInputProps) {
               )}
             </button>
           </div>
-
           <div className="px-2 pb-1 pt-2 text-center text-xs text-muted-foreground/80">
             Tekan{" "}
             <kbd className="rounded border bg-muted px-1 text-foreground">

@@ -9,12 +9,14 @@ export default function ChatMessage({ message }: ChatMessageProps) {
 
   return (
     <div
-      className={`flex w-full ${isUser ? "justify-end" : "justify-start"} mb-4`}
+      className={`flex w-full px-4 sm:px-6 ${
+        isUser ? "justify-end" : "justify-start"
+      } mb-4`}
     >
       <div
         className={`group relative max-w-[75%] rounded-2xl px-4 py-3 shadow-sm transition-all duration-200 hover:shadow-md ${
           isUser
-            ? "bg-primary text-primary-content rounded-br-sm"
+            ? "bg-base-200 text-base-content rounded-bl-sm"
             : "bg-base-200 text-base-content rounded-bl-sm"
         }`}
       >
