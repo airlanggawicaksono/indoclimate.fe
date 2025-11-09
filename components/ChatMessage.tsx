@@ -1,4 +1,6 @@
 import { Message } from "@/types";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface ChatMessageProps {
   message: Message;
@@ -20,9 +22,27 @@ export default function ChatMessage({ message }: ChatMessageProps) {
             : "bg-base-200 text-base-content rounded-bl-sm"
         }`}
       >
-        <p className="whitespace-pre-wrap text-[15px] leading-relaxed">
-          {message.content}
-        </p>
+        <div className="prose prose-sm max-w-none text-[15px] leading-relaxed">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              a: ({ node, ...props }) => (
+                <a
+                  {...props}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:text-blue-600 underline transition-colors duration-200"
+                />
+              ),
+              p: ({ node, ...props }) => <p {...props} className="mb-2" />,
+              strong: ({ node, ...props }) => (
+                <strong {...props} className="font-semibold" />
+              ),
+            }}
+          >
+            {message.content}
+          </ReactMarkdown>
+        </div>
 
         {message.metadata?.sources && message.metadata.sources.length > 0 && (
           <div className="mt-2 pt-2 border-t border-current/10">

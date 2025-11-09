@@ -19,11 +19,15 @@ export default function EmptyState() {
         </div>
         <div className="text-center">
           <p className="text-xl font-light tracking-wide text-foreground/70">
-            Gadjah Mada Uni for KONEKSI
+            Gadjah Mada Uni for KONEKSI (Knowledge Partership Platform Australia-Indonesia)
+          </p>
+           <p className="text-xl font-light tracking-wide text-foreground/70">
+            Indo-Climate Chatbot, Information center for climate laws and documents 
           </p>
           <p className="mt-2 text-sm font-light text-muted-foreground">
             ©2023-2024
           </p>
+          
         </div>
       </div>
     </div>

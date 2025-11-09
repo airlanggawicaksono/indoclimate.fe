@@ -15,6 +15,7 @@ export interface ChromaMetadata {
   tanggal_berlaku: string; // Effective date
   status: string; // Status of regulation
   dasar_hukum: string[]; // Legal basis (array of strings)
+  view_link?: string; // Link to view the document
 }
 
 /**

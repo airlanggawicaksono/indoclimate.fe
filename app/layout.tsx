@@ -8,8 +8,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "KONEKSI - Chat Assistant",
-  description: "Gadjah Mada University KONEKSI Chat Assistant",
+  title: "Indoclimate - Chat Assistant",
+  description: "Indoclimate - Climate Laws and Documents Information Center",
+  icons: {
+    icon: "/images/indoclimatelogo.png",
+  },
 };
 
 export default function RootLayout({

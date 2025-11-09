@@ -1,3 +1,5 @@
+import { ChromaMetadata } from "./chroma";
+
 /**
  * Predefined output JSON structure for chatbot responses
  */
