@@ -5,18 +5,19 @@ import { NextRequest } from "next/server";
 import { chatService } from "@/services/chatService";
 import { chatHistoryStore } from "@/services/chatHistoryService";
 import { ragProcessingService } from "@/services/ragProcessingService";
+import { getClientIP, createSimpleHash } from "@/utils/requestUtils";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
  * POST /api/chat
- * Intelligent routing: RAG or General Chat
+ * Intelligent routing: RAG or General Chat with metadata support
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { message, sessionId = "default" } = body;
+    const { message, sessionId, userId, metadata } = body;
 
     if (!message || typeof message !== "string") {
       return new Response(
@@ -25,16 +26,46 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // If no explicit sessionId is provided, generate one based on userId or client info
+    const actualSessionId = sessionId || generateSessionId(request, userId);
+    
+    // Gather all metadata to update in one call
+    const connectionMetadata = {
+      userAgent: request.headers.get("user-agent") || undefined,
+      ipAddress: getClientIP(request),
+      lastActive: new Date(),
+    };
+
+    // Initialize or update session with metadata
+    if (!chatHistoryStore.hasSession(actualSessionId)) {
+      chatHistoryStore.createSession(actualSessionId, userId, {
+        ...metadata,
+        ...connectionMetadata,
+      });
+    } else {
+      // Update all relevant metadata in a single call
+      chatHistoryStore.updateMetadata(actualSessionId, {
+        userId,
+        ...metadata,
+        ...connectionMetadata,
+      });
+    }
+
     // Step 1: Route the query
     const routing = await chatService.routeQuery(message);
 
-    // Step 2: Handle based on routing decision
+    // Step 2: Update session type based on routing
+    chatHistoryStore.updateMetadata(actualSessionId, {
+      sessionType: routing.action === "rag" ? "rag" : "general",
+    });
+
+    // Step 3: Handle based on routing decision
     if (routing.action === "rag") {
       // RAG path: Query ChromaDB and use Agent Chat
-      return handleRAGQuery(message, routing, sessionId);
+      return handleRAGQuery(message, routing, actualSessionId);
     } else {
       // General chat path: Use streaming general chat with history
-      return handleGeneralChat(message, sessionId);
+      return handleGeneralChat(message, actualSessionId);
     }
   } catch (error) {
     console.error("Chat API error:", error);
@@ -47,6 +78,28 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+/**
+ * Generate a unique session ID based on available information
+ */
+function generateSessionId(request: NextRequest, userId?: string): string {
+  // If userId is provided, use it as a base for session ID
+  if (userId) {
+    return `user_${userId}_${Date.now()}`;
+  }
+  
+  // If no userId, try to generate based on client IP and user agent
+  const clientIP = getClientIP(request);
+  const userAgent = request.headers.get("user-agent") || "unknown";
+  
+  // Create a simple hash-like ID from client info
+  const timestamp = Date.now().toString();
+  const ipHash = createSimpleHash(clientIP);
+  const uaHash = createSimpleHash(userAgent);
+  
+  return `session_${ipHash}_${uaHash}_${timestamp}`;
+}
+
 
 /**
  * Handle RAG query (streaming)
@@ -83,7 +136,12 @@ async function handleRAGQuery(
             contextPrompt,
             (chunk: string) => {
               fullResponse += chunk;
-              const data = `data: ${JSON.stringify({ content: chunk, done: false, mode: "rag" })}\n\n`;
+              const data = `data: ${JSON.stringify({ 
+                content: chunk, 
+                done: false, 
+                mode: "rag",
+                sessionId 
+              })}\n\n`;
               controller.enqueue(encoder.encode(data));
             },
             history.getMessages()
@@ -94,7 +152,12 @@ async function handleRAGQuery(
             const sourceText = "\n\n**Referensi:**\n\n";
             controller.enqueue(
               encoder.encode(
-                `data: ${JSON.stringify({ content: sourceText, done: false, mode: "rag" })}\n\n`
+                `data: ${JSON.stringify({ 
+                  content: sourceText, 
+                  done: false, 
+                  mode: "rag",
+                  sessionId 
+                })}\n\n`
               )
             );
             fullResponse += sourceText;
@@ -105,7 +168,12 @@ async function handleRAGQuery(
               const linkText = `[${sourceLink}](${viewLink})\n\n`;
               controller.enqueue(
                 encoder.encode(
-                  `data: ${JSON.stringify({ content: linkText, done: false, mode: "rag" })}\n\n`
+                  `data: ${JSON.stringify({ 
+                    content: linkText, 
+                    done: false, 
+                    mode: "rag",
+                    sessionId 
+                  })}\n\n`
                 )
               );
               fullResponse += linkText;
@@ -121,6 +189,7 @@ async function handleRAGQuery(
             content: "",
             done: true,
             mode: "rag",
+            sessionId,
             sources: sources.map((source) => ({
               jenis: source.jenis,
               nomor: source.nomor,
@@ -136,6 +205,7 @@ async function handleRAGQuery(
           const errorData = `data: ${JSON.stringify({
             error: "RAG processing failed",
             details: error instanceof Error ? error.message : "Unknown error",
+            sessionId,
           })}\n\n`;
           controller.enqueue(encoder.encode(errorData));
           controller.close();
@@ -173,7 +243,12 @@ async function handleGeneralChat(message: string, sessionId: string) {
           message,
           (chunk: string) => {
             fullResponse += chunk;
-            const data = `data: ${JSON.stringify({ content: chunk, done: false, mode: "general" })}\n\n`;
+            const data = `data: ${JSON.stringify({ 
+              content: chunk, 
+              done: false, 
+              mode: "general",
+              sessionId 
+            })}\n\n`;
             controller.enqueue(encoder.encode(data));
           },
           history.getMessages()
@@ -183,7 +258,11 @@ async function handleGeneralChat(message: string, sessionId: string) {
         history.addHumanMessage(message);
         history.addAIMessage(fullResponse);
 
-        const doneData = `data: ${JSON.stringify({ content: "", done: true })}\n\n`;
+        const doneData = `data: ${JSON.stringify({ 
+          content: "", 
+          done: true, 
+          sessionId 
+        })}\n\n`;
         controller.enqueue(encoder.encode(doneData));
         controller.close();
       } catch (error) {
@@ -191,6 +270,7 @@ async function handleGeneralChat(message: string, sessionId: string) {
         const errorData = `data: ${JSON.stringify({
           error: "Streaming failed",
           details: error instanceof Error ? error.message : "Unknown error",
+          sessionId,
         })}\n\n`;
         controller.enqueue(encoder.encode(errorData));
         controller.close();

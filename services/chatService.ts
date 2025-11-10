@@ -57,7 +57,7 @@ DATABASE: Indoclimate - berisi peraturan perundangan, hukum iklim, lingkungan, b
 Keluaran SELALU berupa JSON yang valid.
 
 ATURAN PENTING - GUNAKAN RAG ("action":"rag") untuk SEMUA pertanyaan tentang:
-✅ PERATURAN/HUKUM: Perda, Pergub, Perbup, Perwali, UU, PP, Perpres, Permen, pasal, ayat
+✅ PERATURAN/HUKUM: Perda, Pergub, Perbup, Perwali, UU, PP, Perpres, Permen, pasal, ayat, G20 atau Peratruan iklim internasional lain nya 
 ✅ IKLIM: Perubahan iklim, climate change, pemanasan global, emisi, karbon, GRK
 ✅ LINGKUNGAN: Pengelolaan lingkungan, pencemaran, konservasi, ekosistem, biodiversitas
 ✅ BENCANA: Bencana alam, mitigasi bencana, penanggulangan bencana, tanggap darurat
