@@ -20,8 +20,9 @@ prod-setup: ## Install dependencies and build for production
 run-prod: ## Run production build bound to localhost and port 5324
 	npm run start -- --hostname $(HOST) --port $(PORT)
 
-nginx-setup: ## Copy nginx.conf, reload nginx, and ensure certbot config exists
-	sudo cp nginx.conf /etc/nginx/conf.d/indoclimate.conf
+nginx-setup: ## Copy nginx.conf, enable site, reload nginx, and ensure certbot config exists
+	sudo cp nginx.conf /etc/nginx/sites-available/indoclimate
+	sudo ln -sf /etc/nginx/sites-available/indoclimate /etc/nginx/sites-enabled/indoclimate
 	sudo nginx -t
 	sudo systemctl reload nginx
 	sudo certbot --nginx -d $(DOMAIN)
