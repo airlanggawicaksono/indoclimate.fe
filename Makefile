@@ -1,33 +1,43 @@
-.PHONY: dev prod nginx-setup nginx-restart nginx-test health stop
+.PHONY: dev prod-build prod-run prod systemd-install systemd-start systemd-stop systemd-restart health
+
+PORT ?= 5324
+HOST ?= 127.0.0.1
+NODE_ENV ?= production
+
+export PORT
+export HOST
+export NODE_ENV
 
 # Simple Development target
 dev: ## Run development server (port 3000)
 	npm run dev
 
-# Production target: install dependencies, build, start server on port 2001, and restart nginx
-prod: ## Build and deploy production version
+# Production target: install dependencies, build, and prepare for systemd
+prod-build: ## Build production version
 	npm install
 	npm run build
-	PORT=2001 npm run start &
+
+prod-run: ## Run production build bound to localhost and port 5324
+	npm run start -- --hostname $(HOST) --port $(PORT)
+
+prod: prod-build prod-run ## Build then start the production server
+
+# Systemd service management
+systemd-install: ## Install the systemd service file
+	sudo cp indoclimate.service /etc/systemd/system/
+	sudo systemctl daemon-reload
+	sudo systemctl enable indoclimate.service
+
+systemd-start: ## Start the application via systemd (runs on port 5324)
+	sudo systemctl start indoclimate
+
+systemd-stop: ## Stop the application via systemd
+	sudo systemctl stop indoclimate
+
+systemd-restart: ## Restart the application via systemd
+	sudo systemctl restart indoclimate
 
 # Health check
-health: ## Check if the application is running on port 2001
-	@echo "Checking if app is running on port 2001..."
-	@nc -z localhost 2001 && echo "App is running on port 2001" || echo "App is NOT running on port 2001"
-
-# Stop the application
-stop: ## Stop the application running on port 2001
-	@echo "Stopping application on port 2001..."
-	@pkill -f "PORT=2001" || echo "No process found running on port 2001"
-
-# Nginx management
-nginx-setup: ## Setup nginx configuration (requires sudo)
-	sudo cp nginx.conf /etc/nginx/sites-available/indoclimate
-	sudo ln -sf /etc/nginx/sites-available/indoclimate /etc/nginx/sites-enabled/
-	sudo nginx -t
-
-nginx-restart: ## Restart nginx
-	sudo systemctl restart nginx
-
-nginx-test: ## Test nginx configuration
-	sudo nginx -t
+health: ## Check if the application is running on the configured host/port
+	@echo "Checking if app is running on $(HOST):$(PORT)..."
+	@nc -z $(HOST) $(PORT) && echo "App is running on $(HOST):$(PORT)" || echo "App is NOT running on $(HOST):$(PORT)"
