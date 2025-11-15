@@ -24,31 +24,31 @@ export default function CurvedNavbar({
 }: CurvedNavbarProps) {
   return (
     <div className="w-full bg-[oklch(0.25_0_0)] border-b border-white/10">
-      <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 text-white/70 text-xs font-light w-full mx-auto">
+      <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 text-white/70 text-sm font-light w-full mx-auto">
         {/* Left: Logo */}
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-3 flex-shrink-0">
           <Image
             src="/images/indoclimatelogo.png"
             alt="Indoclimate"
-            width={32}
-            height={32}
+            width={48}
+            height={48}
             className="object-contain"
           />
-          <span className="text-sm font-normal text-white/90 hidden sm:inline">Indoclimate</span>
+          <span className="text-lg font-normal text-white/90 hidden sm:inline">Indoclimate</span>
         </div>
 
         {/* Center: Stats - hidden on mobile, visible on larger screens */}
         <div className="hidden md:flex items-center gap-4 lg:gap-8">
-          <span className="hidden lg:inline">Document: {docCount.toLocaleString("id-ID")}</span>
-          <span className="hidden lg:inline">Pages: {pageCount.toLocaleString("id-ID")}</span>
-          <span className="hidden lg:inline">News: {newsCount.toLocaleString("id-ID")}</span>
-          <span className="hidden lg:inline">Fragment: {fragCount.toLocaleString("id-ID")}</span>
+          <span className="hidden lg:inline text-sm">Document: {docCount.toLocaleString("id-ID")}</span>
+          <span className="hidden lg:inline text-sm">Pages: {pageCount.toLocaleString("id-ID")}</span>
+          <span className="hidden lg:inline text-sm">News: {newsCount.toLocaleString("id-ID")}</span>
+          <span className="hidden lg:inline text-sm">Fragment: {fragCount.toLocaleString("id-ID")}</span>
           {/* Compact stats for md-lg screens */}
-          <span className="lg:hidden">Docs: {docCount.toLocaleString("id-ID")}</span>
-          <span className="lg:hidden">Pages: {pageCount.toLocaleString("id-ID")}</span>
+          <span className="lg:hidden text-sm">Docs: {docCount.toLocaleString("id-ID")}</span>
+          <span className="lg:hidden text-sm">Pages: {pageCount.toLocaleString("id-ID")}</span>
         </div>
 
-        {/* Right: Reset button + Koneksi logo */}
+        {/* Right: Reset button */}
         <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
           {hasMessages && (
             <button
@@ -58,13 +58,6 @@ export default function CurvedNavbar({
               reset
             </button>
           )}
-          <Image
-            src="/images/Koneksi.png"
-            alt="Koneksi"
-            width={80}
-            height={28}
-            className="object-contain sm:w-[100px] lg:w-[120px]"
-          />
         </div>
       </div>
     </div>

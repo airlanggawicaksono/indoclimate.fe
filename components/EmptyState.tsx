@@ -9,7 +9,7 @@ export default function EmptyState() {
       <div className="flex flex-col items-center gap-8 opacity-80 transition-opacity duration-300">
         <div className="relative">
           <Image
-            src="/images/Koneksi.png"
+            src="/images/Koneksi.webp"
             alt="Koneksi Logo"
             width={300}
             height={300}
