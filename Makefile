@@ -29,6 +29,13 @@ run-prod: ## Run production build in background on localhost:5324
 	echo $$! > $(PID_FILE)
 	@echo "Next.js started in background (PID $$(cat $(PID_FILE))); logs: $(RUN_LOG)"
 
+stop: ## Stop running Next.js instance
+	@if [ -f $(PID_FILE) ]; then \
+		kill $$(cat $(PID_FILE)) && rm $(PID_FILE) && echo "Next.js stopped (PID file removed)"; \
+	else \
+		pkill -f "next" && echo "Next.js stopped (killed by process name)" || echo "No Next.js process found"; \
+	fi
+
 nginx-setup: ## Copy nginx.conf, enable site, reload nginx, and ensure certbot config exists
 	sudo cp nginx.conf /etc/nginx/sites-available/indoclimate
 	sudo ln -sf /etc/nginx/sites-available/indoclimate /etc/nginx/sites-enabled/indoclimate
