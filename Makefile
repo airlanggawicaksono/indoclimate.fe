@@ -24,10 +24,9 @@ prod-setup: ## Install dependencies and build for production
 	npm run build
 
 run-prod: ## Run production build in background on localhost:5324
-	mkdir -p $(LOG_DIR)
-	nohup npm run start -- --hostname $(HOST) --port $(PORT) > $(RUN_LOG) 2>&1 &
-	echo $$! > $(PID_FILE)
-	@echo "Next.js started in background (PID $$(cat $(PID_FILE))); logs: $(RUN_LOG)"
+	@mkdir -p $(LOG_DIR)
+	@nohup npm run start -- --hostname $(HOST) --port $(PORT) > $(RUN_LOG) 2>&1 & echo $$! > $(PID_FILE)
+	@echo "Next.js started in background (PID: $$(cat $(PID_FILE))); logs: $(RUN_LOG)"
 
 stop: ## Stop running Next.js instance
 	@if [ -f $(PID_FILE) ]; then \
