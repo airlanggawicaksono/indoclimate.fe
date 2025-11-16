@@ -4,7 +4,7 @@ PORT ?= 5324
 HOST ?= 127.0.0.1
 NODE_ENV ?= production
 DOMAIN ?= chat.indoclimate.id
-LOG_DIR ?= logs
+LOG_DIR ?= ./logs
 RUN_LOG ?= $(LOG_DIR)/run-prod.log
 PID_FILE ?= $(LOG_DIR)/run-prod.pid
 
@@ -29,10 +29,11 @@ run-prod: ## Run production build in background on localhost:5324
 	@echo "Next.js started in background (PID: $$(cat $(PID_FILE))); logs: $(RUN_LOG)"
 
 stop: ## Stop running Next.js instance
-	@if [ -f $(PID_FILE) ]; then \
-		kill $$(cat $(PID_FILE)) && rm $(PID_FILE) && echo "Next.js stopped (PID file removed)"; \
+	@if [ -f $(PID_FILE) ] && [ -s $(PID_FILE) ]; then \
+		kill $$(cat $(PID_FILE)) 2>/dev/null && rm $(PID_FILE) && echo "Next.js stopped (PID file removed)" || \
+		(rm $(PID_FILE) && echo "PID file removed (process already dead)"); \
 	else \
-		pkill -f "next" && echo "Next.js stopped (killed by process name)" || echo "No Next.js process found"; \
+		pkill -f "next-server" && echo "Next.js stopped (killed by process name)" || echo "No Next.js process found"; \
 	fi
 
 nginx-setup: ## Copy nginx.conf, enable site, reload nginx, and ensure certbot config exists
