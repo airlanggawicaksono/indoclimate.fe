@@ -1,4 +1,4 @@
-.PHONY: dev prod-setup run-prod nginx-setup
+.PHONY: dev install prod-build run-prod nginx-setup stop
 
 PORT ?= 5324
 HOST ?= 127.0.0.1
@@ -19,8 +19,10 @@ export PID_FILE
 dev: ## Run development server (port 3000)
 	npm run dev
 
-prod-setup: ## Install dependencies and build for production
+install: ## Install dependencies only
 	npm install
+
+prod-build: ## Build for production
 	npm run build
 
 run-prod: ## Run production build in background on localhost:5324
