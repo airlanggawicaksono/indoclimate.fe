@@ -6,7 +6,7 @@ import { chatHistoryStore } from "@/services/chatHistoryService";
 // Wablas credentials from environment
 const WABLASS_API_KEY = process.env.WABLASS_API_KEY;
 const WABLASS_WEBHOOK_SECRET = process.env.WABLASS_WEBHOOK_SECRET;
-const WABLAS_API_URL = "https://sby.wablas.com/api/send-message";
+const WABLAS_API_URL = "https://jogja.wablas.com/api/send-message";
 
 /**
  * Send message via Wablas API
@@ -144,6 +144,7 @@ export async function POST(req: NextRequest) {
     // Extract message and phone
     const userMessage = (data.message || "").trim();
     const targetPhone = data.phone; // sender/customer phone number
+    const deviceId = data.deviceId; // device ID that received the message
 
     if (!userMessage || !targetPhone) {
       console.warn("Missing fields: message or phone");
@@ -154,6 +155,7 @@ export async function POST(req: NextRequest) {
     }
 
     console.log(`Processing message from ${targetPhone}: ${userMessage.substring(0, 50)}...`);
+    console.log(`Device ID: ${deviceId}`);
 
     // Create session ID based on phone number
     const sessionId = `wablass_${targetPhone}`;
