@@ -80,12 +80,7 @@ async function processRAGQueryNonStreaming(
     fixedGrammar
   );
 
-  // Log the final prompt for debugging
-  console.log("=== RAG CONTEXT PROMPT (Wablas) ===");
-  console.log(contextPrompt);
-  console.log("=== END PROMPT ===");
-
-  const history = chatHistoryStore.getHistory(sessionId, 2);
+  const history = chatHistoryStore.getHistory(sessionId, 4);
 
   // Get full response from general chat (non-streaming agent)
   const fullResponse = await chatService.generalChatNonStreaming(
@@ -128,14 +123,19 @@ async function processRAGQueryNonStreaming(
  * Process general chat query without streaming
  */
 async function processGeneralChatNonStreaming(message: string, sessionId: string): Promise<string> {
-  const history = chatHistoryStore.getHistory(sessionId, 2);
+  const history = chatHistoryStore.getHistory(sessionId, 4);
+
+  // Prepend language instruction to force LLM to match query language
+  const messageWithInstruction = `!ANSWER BASED OFF THE LANGUAGE OF THE QUERY
+query: ${message}`;
 
   // Use non-streaming agent directly
   const fullResponse = await chatService.generalChatNonStreaming(
-    message,
+    messageWithInstruction,
     history.getMessages()
   );
 
+  // Save original message to history (without instruction)
   history.addHumanMessage(message);
   history.addAIMessage(fullResponse);
 
@@ -183,8 +183,8 @@ export async function POST(req: NextRequest) {
     const sessionId = `wablass_${targetPhone}`;
 
     try {
-      // Step 1: Get last message pair (N=1) for routing context
-      const routingHistory = chatHistoryStore.getHistory(sessionId, 1);
+      // Step 1: Get last 2 messages (1 pair) for routing context
+      const routingHistory = chatHistoryStore.getHistory(sessionId, 2);
       const routing = await chatService.routeQuery(userMessage, routingHistory.getMessages());
       console.log("Routing result:", routing);
 

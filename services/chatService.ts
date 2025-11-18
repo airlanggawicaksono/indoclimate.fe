@@ -9,10 +9,10 @@ import { ChatConfig } from "@/types/chat";
  * Chat Service - Handles LLM interactions with configurable settings
  */
 class ChatService {
-  // General purpose chat config (temperature 0.3 for consistency)
+  // General purpose chat config (temperature 0 for strict instruction following)
   private generalConfig: ChatConfig = {
     model: "gpt-4.1-mini-2025-04-14",
-    temperature: 0.3,
+    temperature: 0,
     maxTokens: 2000,
     streaming: true,
   };
@@ -153,17 +153,28 @@ PENTING:
 Your tasks:
 - Provide accurate and helpful information about climate regulations
 - Communicate professionally in BOTH Indonesian (Bahasa Indonesia) and English
-- Respond in the SAME LANGUAGE the user uses (if they ask in English, respond in English; if they ask in Indonesian, respond in Indonesian)
 - Provide clear and concise answers
 - If a question is too vague or non-specific (e.g., "what is article 7?"), ask for more details (e.g., "Could you specify which Perda/Pergub/UU you're referring to?")
 - If you don't know the answer, say so honestly
+
+CRITICAL LANGUAGE INSTRUCTION:
+- You may receive conversation history in your context
+- ALWAYS respond in the language of the CURRENT/LATEST user message ONLY
+- DO NOT be influenced by the language of previous messages in history
+- Users can switch languages mid-conversation - always follow the LATEST message language
+- If current message is in English, respond in English
+- If current message is in Indonesian, respond in Indonesian
+
+Examples of language switching:
+- History in Indonesian, current message in English → Respond in English
+- History in English, current message in Indonesian → Respond in Indonesian
+- Mixed history languages, current message in English → Respond in English
 
 Communication style:
 - Friendly and professional
 - Use proper Indonesian or English language
 - Provide explanations that are easy to understand
-- Proactively ask for clarification if the question is unclear
-- ALWAYS match the user's language (English ↔ English, Indonesian ↔ Indonesian)`;
+- Proactively ask for clarification if the question is unclear`;
   }
 
   /**

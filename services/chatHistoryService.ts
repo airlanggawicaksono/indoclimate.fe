@@ -5,16 +5,17 @@ import { BaseMessage, HumanMessage, AIMessage } from "@langchain/core/messages";
 import { sessionStorage, SessionMetadata, Session } from "./SessionStorage";
 
 /**
- * Chat History Service with sliding window (N=2)
- * Maintains only the last N message pairs (human + AI)
+ * Chat History Service with sliding window
+ * Maintains only the last N individual messages (not pairs)
+ * Example: maxMessages=4 keeps [msg1, msg2, msg3, msg4], when msg5 arrives: [msg2, msg3, msg4, msg5]
  */
 export class ChatHistoryService {
   private readonly sessionId: string;
-  private readonly maxPairs: number;
+  private readonly maxMessages: number;
 
-  constructor(sessionId: string, maxPairs: number = 2) {
+  constructor(sessionId: string, maxMessages: number = 4) {
     this.sessionId = sessionId;
-    this.maxPairs = maxPairs;
+    this.maxMessages = maxMessages;
   }
 
   /**
@@ -70,9 +71,11 @@ export class ChatHistoryService {
 class ChatHistoryStore {
   /**
    * Get or create a chat history for a session
+   * @param sessionId - Unique identifier for the session
+   * @param maxMessages - Maximum number of individual messages to keep (default: 4)
    */
-  getHistory(sessionId: string, maxPairs: number = 2): ChatHistoryService {
-    return new ChatHistoryService(sessionId, maxPairs);
+  getHistory(sessionId: string, maxMessages: number = 4): ChatHistoryService {
+    return new ChatHistoryService(sessionId, maxMessages);
   }
 
   /**

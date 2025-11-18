@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
     
     // If sessionId is provided (or default), return that specific session
     const actualSessionId = sessionId || "default";
-    const history = chatHistoryStore.getHistory(actualSessionId, 2);
+    const history = chatHistoryStore.getHistory(actualSessionId, 4);
     const summary = history.getSummary();
     const messages = history.getMessages();
     const metadata = chatHistoryStore.getMetadata(actualSessionId);

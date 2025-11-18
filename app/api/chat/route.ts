@@ -51,8 +51,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Step 1: Get last message pair (N=1) for routing context
-    const routingHistory = chatHistoryStore.getHistory(actualSessionId, 1);
+    // Step 1: Get last 2 messages (1 pair) for routing context
+    const routingHistory = chatHistoryStore.getHistory(actualSessionId, 2);
     const routing = await chatService.routeQuery(message, routingHistory.getMessages());
 
     // Step 2: Update session type based on routing
@@ -122,13 +122,8 @@ async function handleRAGQuery(
     const { contextPrompt, rationale, sources } =
       await ragProcessingService.processRAGQuery(ragOptimizedQuery, expandedQuery, fixedGrammar);
 
-    // Log the final prompt for debugging
-    console.log("=== RAG CONTEXT PROMPT (Web) ===");
-    console.log(contextPrompt);
-    console.log("=== END PROMPT ===");
-
-    // Get history
-    const history = chatHistoryStore.getHistory(sessionId, 2);
+    // Get history (4 individual messages)
+    const history = chatHistoryStore.getHistory(sessionId, 4);
 
     // Create streaming response
     const encoder = new TextEncoder();
@@ -243,8 +238,12 @@ async function handleRAGQuery(
  * Handle general chat (streaming)
  */
 async function handleGeneralChat(message: string, sessionId: string) {
-  const history = chatHistoryStore.getHistory(sessionId, 2);
+  const history = chatHistoryStore.getHistory(sessionId, 4);
   const encoder = new TextEncoder();
+
+  // Prepend language instruction to force LLM to match query language
+  const messageWithInstruction = `!ANSWER BASED OFF THE LANGUAGE OF THE QUERY
+query: ${message}`;
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -253,7 +252,7 @@ async function handleGeneralChat(message: string, sessionId: string) {
 
         // Use general chat with history (streaming)
         await chatService.generalChat(
-          message,
+          messageWithInstruction,
           (chunk: string) => {
             fullResponse += chunk;
             const data = `data: ${JSON.stringify({ 

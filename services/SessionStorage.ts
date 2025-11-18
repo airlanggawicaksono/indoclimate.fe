@@ -1,7 +1,7 @@
 // =============================
 // services/SessionStorage.ts
 // =============================
-import { BaseMessage } from "@langchain/core/messages";
+import { BaseMessage, HumanMessage, AIMessage } from "@langchain/core/messages";
 
 /**
  * Interface for session metadata
@@ -55,10 +55,10 @@ class SessionStorage {
   private sessions: Map<string, Session> = new Map();
   private userSessions: Map<string, UserSessionData> = new Map();
   private clientConnections: Map<string, ClientConnectionFingerprint> = new Map(); // Map fingerprint to connection data
-  private readonly maxPairs: number;
+  private readonly maxMessages: number;
 
-  constructor(maxPairs: number = 2) {
-    this.maxPairs = maxPairs;
+  constructor(maxMessages: number = 4) {
+    this.maxMessages = maxMessages;
   }
 
   /**
@@ -208,21 +208,47 @@ class SessionStorage {
   }
 
   /**
+   * Extract query from RAG context markers ${...}$
+   * This keeps history clean by removing Indonesian RAG context
+   */
+  private extractQueryFromMessage(content: string): string {
+    // Look for the pattern ${...}$ (query wrapped with $)
+    // Example: "___begin_context___\n...\n___end_context___\n...\nquestion:\n${What is climate change?}$"
+    const pattern = /\$([^$]+)\$/;
+    const match = content.match(pattern);
+
+    if (match) {
+      // Return just the query part extracted from ${...}$
+      return match[1].trim();
+    }
+
+    // If the pattern isn't found, return the original content
+    return content;
+  }
+
+  /**
    * Add a message to a session
    */
   addMessage(sessionId: string, message: BaseMessage): void {
     let session = this.getSession(sessionId);
-    
+
     if (!session) {
       session = this.createSession(sessionId);
     }
 
-    // Add the message
-    session.messages.push(message);
-    
+    // Clean HumanMessages to extract only the query (removes RAG context)
+    let cleanedMessage = message;
+    if (message instanceof HumanMessage) {
+      const cleanedContent = this.extractQueryFromMessage(message.content.toString());
+      cleanedMessage = new HumanMessage(cleanedContent);
+    }
+
+    // Add the cleaned message
+    session.messages.push(cleanedMessage);
+
     // Trim history to maintain maxPairs (2 pairs = 4 messages max)
     this.trimHistory(session);
-    
+
     this.saveSession(session);
   }
 
@@ -268,15 +294,13 @@ class SessionStorage {
   }
 
   /**
-   * Trim history to maintain maxPairs
+   * Trim history to maintain sliding window of maxMessages
+   * Each message (user or AI) counts individually, not as pairs
    */
   private trimHistory(session: Session): void {
-    // Keep only last (maxPairs * 2) messages
-    const maxMessages = this.maxPairs * 2;
-
-    if (session.messages.length > maxMessages) {
-      // Remove oldest messages
-      session.messages = session.messages.slice(-maxMessages);
+    if (session.messages.length > this.maxMessages) {
+      // Keep only the last maxMessages (sliding window)
+      session.messages = session.messages.slice(-this.maxMessages);
     }
   }
 
@@ -329,5 +353,5 @@ class SessionStorage {
   }
 }
 
-// Export singleton instance
-export const sessionStorage = new SessionStorage();
+// Export singleton instance with sliding window of 4 individual messages
+export const sessionStorage = new SessionStorage(4);

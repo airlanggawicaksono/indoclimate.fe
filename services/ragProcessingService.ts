@@ -248,8 +248,8 @@ ___end_context___
 IMPORTANT INSTRUCTION / INSTRUKSI PENTING:
 Answer in the SAME LANGUAGE as the question below. If the question is in English, respond in English. If the question is in Indonesian, respond in Indonesian.
 Jawab dalam BAHASA YANG SAMA dengan pertanyaan di bawah. Jika pertanyaan dalam Bahasa Inggris, jawab dalam Bahasa Inggris. Jika pertanyaan dalam Bahasa Indonesia, jawab dalam Bahasa Indonesia.
-question/pertanyaan: 
-${fixedGrammar}`,
+question/pertanyaan:
+$${fixedGrammar}$`,
         rationale: "No documents found",
         sources: [],
       };
@@ -310,6 +310,7 @@ ${fixedGrammar}`,
       .join("\n");
 
     // Step 8: Wrap in context markers with fixed_grammar (user's language)
+    // Note: Wrapping query in ${...}$ markers allows history cleaning to extract only the query
     const contextPrompt = `___begin_context___
 ${finalContext}
 ___end_context___
@@ -318,7 +319,7 @@ IMPORTANT INSTRUCTION / INSTRUKSI PENTING:
 Answer in the SAME LANGUAGE as the question below. If the question is in English, respond in English. If the question is in Indonesian, respond in Indonesian.
 Jawab dalam BAHASA YANG SAMA dengan pertanyaan di bawah. Jika pertanyaan dalam Bahasa Inggris, jawab dalam Bahasa Inggris. Jika pertanyaan dalam Bahasa Indonesia, jawab dalam Bahasa Indonesia.
 question/pertanyaan:
-${fixedGrammar}`;
+$${fixedGrammar}$`;
 
     // Step 9: Extract metadata for pills [jenis, nomor, tahun]{view_link}
     const sources = selectedChunks.map((chunk) => ({
