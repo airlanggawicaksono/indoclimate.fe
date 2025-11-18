@@ -51,8 +51,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Step 1: Route the query
-    const routing = await chatService.routeQuery(message);
+    // Step 1: Get last message pair (N=1) for routing context
+    const routingHistory = chatHistoryStore.getHistory(actualSessionId, 1);
+    const routing = await chatService.routeQuery(message, routingHistory.getMessages());
 
     // Step 2: Update session type based on routing
     chatHistoryStore.updateMetadata(actualSessionId, {
@@ -108,17 +109,23 @@ function generateSessionId(request: NextRequest, userId?: string): string {
  */
 async function handleRAGQuery(
   message: string,
-  routing: { expanded_query?: string; rag_optimized_query?: string },
+  routing: { expanded_query?: string; rag_optimized_query?: string; fixed_grammar?: string },
   sessionId: string
 ) {
   try {
-    // Use expanded query for agent if available
-    const agentQuery = routing.expanded_query || message;
-    const ragOptimizedQuery = routing.rag_optimized_query || message;
+    // Extract queries from routing
+    const expandedQuery = routing.expanded_query || message; // Indonesian - for evaluation agent
+    const ragOptimizedQuery = routing.rag_optimized_query || message; // Indonesian - for ChromaDB
+    const fixedGrammar = routing.fixed_grammar || message; // User's language - for LLM
 
     // Process RAG query with full pipeline (chunk expansion, agent evaluation, merging)
     const { contextPrompt, rationale, sources } =
-      await ragProcessingService.processRAGQuery(ragOptimizedQuery, agentQuery);
+      await ragProcessingService.processRAGQuery(ragOptimizedQuery, expandedQuery, fixedGrammar);
+
+    // Log the final prompt for debugging
+    console.log("=== RAG CONTEXT PROMPT (Web) ===");
+    console.log(contextPrompt);
+    console.log("=== END PROMPT ===");
 
     // Get history
     const history = chatHistoryStore.getHistory(sessionId, 2);
@@ -149,14 +156,20 @@ async function handleRAGQuery(
 
           // After streaming completes, append source references as hyperlinks
           if (sources.length > 0) {
-            const sourceText = "\n\n**Referensi:**\n\n";
+            // Detect language from response
+            const isEnglish = /^[a-zA-Z\s\?\!\.,;:'"0-9\-]+$/.test(
+              fullResponse.trim().slice(0, 100)
+            );
+            const sourceText = isEnglish
+              ? "\n\n**References:**\n\n"
+              : "\n\n**Referensi:**\n\n";
             controller.enqueue(
               encoder.encode(
-                `data: ${JSON.stringify({ 
-                  content: sourceText, 
-                  done: false, 
+                `data: ${JSON.stringify({
+                  content: sourceText,
+                  done: false,
                   mode: "rag",
-                  sessionId 
+                  sessionId
                 })}\n\n`
               )
             );

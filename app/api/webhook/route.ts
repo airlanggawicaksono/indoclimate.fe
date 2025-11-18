@@ -64,17 +64,26 @@ async function sendWablasMessage(phone: string, message: string): Promise<boolea
  */
 async function processRAGQueryNonStreaming(
   message: string,
-  routing: { expanded_query?: string; rag_optimized_query?: string },
-  sessionId: string
+  routing: { expanded_query?: string; rag_optimized_query?: string; fixed_grammar?: string },
+  sessionId: string,
+  isWablas: boolean = false
 ): Promise<{ response: string; sources: any[] }> {
-  const agentQuery = routing.expanded_query || message;
-  const ragOptimizedQuery = routing.rag_optimized_query || message;
+  // Extract queries from routing
+  const expandedQuery = routing.expanded_query || message; // Indonesian - for evaluation agent
+  const ragOptimizedQuery = routing.rag_optimized_query || message; // Indonesian - for ChromaDB
+  const fixedGrammar = routing.fixed_grammar || message; // User's language - for LLM
 
   // Process RAG query with full pipeline
   const { contextPrompt, rationale, sources } = await ragProcessingService.processRAGQuery(
     ragOptimizedQuery,
-    agentQuery
+    expandedQuery,
+    fixedGrammar
   );
+
+  // Log the final prompt for debugging
+  console.log("=== RAG CONTEXT PROMPT (Wablas) ===");
+  console.log(contextPrompt);
+  console.log("=== END PROMPT ===");
 
   const history = chatHistoryStore.getHistory(sessionId, 2);
 
@@ -84,14 +93,27 @@ async function processRAGQueryNonStreaming(
     history.getMessages()
   );
 
-  // Append source references
+  // Append source references with language detection
   let responseWithSources = fullResponse;
   if (sources.length > 0) {
-    responseWithSources += "\n\n**Referensi:**\n\n";
+    // Detect language from response
+    const isEnglish = /^[a-zA-Z\s\?\!\.,;:'"0-9\-]+$/.test(
+      fullResponse.trim().slice(0, 100)
+    );
+    const refHeader = isEnglish ? "\n\nReferences:\n\n" : "\n\nReferensi:\n\n";
+    responseWithSources += refHeader;
+
     sources.forEach((source, idx) => {
-      const sourceLink = `[${idx + 1}] ${source.jenis}, ${source.nomor}, ${source.tahun}`;
+      const sourceName = `[${idx + 1}] ${source.jenis}, ${source.nomor}, ${source.tahun}`;
       const viewLink = source.view_link || "#";
-      responseWithSources += `[${sourceLink}](${viewLink})\n\n`;
+
+      if (isWablas) {
+        // Wablas format: plain text with name on one line, link on next line
+        responseWithSources += `${sourceName}\n${viewLink}\n\n`;
+      } else {
+        // Web format: markdown link
+        responseWithSources += `[${sourceName}](${viewLink})\n\n`;
+      }
     });
   }
 
@@ -161,8 +183,9 @@ export async function POST(req: NextRequest) {
     const sessionId = `wablass_${targetPhone}`;
 
     try {
-      // Step 1: Route the query
-      const routing = await chatService.routeQuery(userMessage);
+      // Step 1: Get last message pair (N=1) for routing context
+      const routingHistory = chatHistoryStore.getHistory(sessionId, 1);
+      const routing = await chatService.routeQuery(userMessage, routingHistory.getMessages());
       console.log("Routing result:", routing);
 
       let responseText: string;
@@ -170,7 +193,7 @@ export async function POST(req: NextRequest) {
       // Step 2: Process based on routing decision
       if (routing.action === "rag") {
         console.log("Using RAG mode");
-        const { response } = await processRAGQueryNonStreaming(userMessage, routing, sessionId);
+        const { response } = await processRAGQueryNonStreaming(userMessage, routing, sessionId, true); // isWablas=true for plain text references
         responseText = response;
       } else {
         console.log("Using general chat mode");

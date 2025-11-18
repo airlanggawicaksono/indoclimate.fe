@@ -202,14 +202,15 @@ PENTING: Output harus JSON valid tanpa markdown/backticks.`;
    * 1. Query ChromaDB with rag_optimized_query
    * 2. Expand each chunk with n+1 and merge overlaps
    * 3. Format with [docnum] structure
-   * 4. Agent evaluates relevance and selects IDs
+   * 4. Agent evaluates relevance and selects IDs (using expandedQuery in Indonesian)
    * 5. Filter chunks by selected IDs
-   * 6. Create final context with ___begin_context__ wrapper
+   * 6. Create final context with ___begin_context__ wrapper (using fixedGrammar in user's language)
    * 7. Return context + metadata with view_links for pills
    */
   async processRAGQuery(
     ragOptimizedQuery: string,
     expandedQuery: string,
+    fixedGrammar: string,
     k?: number
   ): Promise<{
     contextPrompt: string;
@@ -233,12 +234,22 @@ PENTING: Output harus JSON valid tanpa markdown/backticks.`;
     const distances = results.distances[0]?.filter((d) => d !== null) || [];
 
     if (documents.length === 0) {
+      // Detect language from fixedGrammar to show appropriate message
+      const isEnglish = /^[a-zA-Z\s\?\!\.,;:'"0-9\-]+$/.test(fixedGrammar.trim().slice(0, 100));
+      const noDocsMessage = isEnglish
+        ? "No documents found."
+        : "Tidak ada dokumen yang ditemukan.";
+
       return {
         contextPrompt: `___begin_context___
-Tidak ada dokumen yang ditemukan.
+${noDocsMessage}
 ___end_context___
 
-${expandedQuery}`,
+IMPORTANT INSTRUCTION / INSTRUKSI PENTING:
+Answer in the SAME LANGUAGE as the question below. If the question is in English, respond in English. If the question is in Indonesian, respond in Indonesian.
+Jawab dalam BAHASA YANG SAMA dengan pertanyaan di bawah. Jika pertanyaan dalam Bahasa Inggris, jawab dalam Bahasa Inggris. Jika pertanyaan dalam Bahasa Indonesia, jawab dalam Bahasa Indonesia.
+question/pertanyaan: 
+${fixedGrammar}`,
         rationale: "No documents found",
         sources: [],
       };
@@ -298,12 +309,16 @@ ${expandedQuery}`,
       })
       .join("\n");
 
-    // Step 8: Wrap in context markers with expanded query
+    // Step 8: Wrap in context markers with fixed_grammar (user's language)
     const contextPrompt = `___begin_context___
 ${finalContext}
 ___end_context___
 
-${expandedQuery}`;
+IMPORTANT INSTRUCTION / INSTRUKSI PENTING:
+Answer in the SAME LANGUAGE as the question below. If the question is in English, respond in English. If the question is in Indonesian, respond in Indonesian.
+Jawab dalam BAHASA YANG SAMA dengan pertanyaan di bawah. Jika pertanyaan dalam Bahasa Inggris, jawab dalam Bahasa Inggris. Jika pertanyaan dalam Bahasa Indonesia, jawab dalam Bahasa Indonesia.
+question/pertanyaan:
+${fixedGrammar}`;
 
     // Step 9: Extract metadata for pills [jenis, nomor, tahun]{view_link}
     const sources = selectedChunks.map((chunk) => ({
