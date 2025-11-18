@@ -15,7 +15,7 @@ echo ""
 
 # Test phone number (replace with your test number)
 TEST_PHONE="6287887617782"
-TEST_MESSAGE="Test message from script"
+TEST_MESSAGE="could you please give me the summary of cliimate change regulation in jakarta"
 
 echo "Sending to: $TEST_PHONE"
 echo "Message: $TEST_MESSAGE"
@@ -23,7 +23,7 @@ echo ""
 echo "=== Sending request ==="
 
 # Send message and show full response
-curl -v -X POST "https://sby.wablas.com/api/send-message" \
+curl -v -X POST "https://jogja.wablas.com/api/send-message" \
   -H "Content-Type: application/json" \
   -H "Authorization: ${WABLASS_API_KEY}.${WABLASS_WEBHOOK_SECRET}" \
   -d "{\"phone\":\"${TEST_PHONE}\",\"message\":\"${TEST_MESSAGE}\"}" \

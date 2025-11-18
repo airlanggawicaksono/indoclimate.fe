@@ -156,43 +156,42 @@ async function handleRAGQuery(
             history.getMessages()
           );
 
-          // After streaming completes, append source references as hyperlinks
+          // Append source references directly to the AI message content before saving to history
           if (sources.length > 0) {
             // Detect language from response
             const isEnglish = /^[a-zA-Z\s\?\!\.,;:'"0-9\-]+$/.test(
               fullResponse.trim().slice(0, 100)
             );
-            const sourceText = isEnglish
-              ? "\n\n**References:**\n\n"
-              : "\n\n**Referensi:**\n\n";
+            const refHeader = isEnglish ? "\n\n**References:**\n\n" : "\n\n**Referensi:**\n\n";
+            
+            // Add the header to the full response
+            fullResponse += refHeader;
+            
+            // Format sources in the format [metadata] \n links \n ... and append to fullResponse
+            sources.forEach((source, idx) => {
+              const sourceName = `[${idx + 1}] ${source.jenis}, ${source.nomor}, ${source.tahun}`;
+              const viewLink = source.view_link || "#";
+              const linkText = `[${sourceName}](${viewLink})\n\n`;
+              fullResponse += linkText;
+            });
+            
+            // Send the complete references section as a single chunk
+            const referencesContent = refHeader + sources.map((source, idx) => {
+              const sourceName = `[${idx + 1}] ${source.jenis}, ${source.nomor}, ${source.tahun}`;
+              const viewLink = source.view_link || "#";
+              return `[${sourceName}](${viewLink})\n\n`;
+            }).join('');
+            
             controller.enqueue(
               encoder.encode(
                 `data: ${JSON.stringify({
-                  content: sourceText,
+                  content: referencesContent,
                   done: false,
                   mode: "rag",
                   sessionId
                 })}\n\n`
               )
             );
-            fullResponse += sourceText;
-
-            sources.forEach((source, idx) => {
-              const sourceLink = `[${idx + 1}] ${source.jenis}, ${source.nomor}, ${source.tahun}`;
-              const viewLink = source.view_link || "#";
-              const linkText = `[${sourceLink}](${viewLink})\n\n`;
-              controller.enqueue(
-                encoder.encode(
-                  `data: ${JSON.stringify({ 
-                    content: linkText, 
-                    done: false, 
-                    mode: "rag",
-                    sessionId 
-                  })}\n\n`
-                )
-              );
-              fullResponse += linkText;
-            });
           }
 
           // Add to history
