@@ -17,6 +17,11 @@ async function sendWablasMessage(phone: string, message: string): Promise<boolea
     return false;
   }
 
+  console.log(`Sending message to: ${phone}`);
+  console.log(`Message preview: ${message.substring(0, 100)}...`);
+  console.log(`API Key present: ${!!WABLASS_API_KEY}`);
+  console.log(`Secret present: ${!!WABLASS_WEBHOOK_SECRET}`);
+
   try {
     const response = await fetch(WABLAS_API_URL, {
       method: "POST",
@@ -30,13 +35,24 @@ async function sendWablasMessage(phone: string, message: string): Promise<boolea
       }),
     });
 
-    if (!response.ok) {
-      console.error(`Failed to send message: ${response.status} ${response.statusText}`);
-      return false;
+    let data: any = {};
+    try {
+      data = await response.json();
+      console.log("Response JSON:", data);
+    } catch (e) {
+      console.error("JSON parse error:", e);
+      const text = await response.text();
+      console.error(`Non-JSON response from Wablas: ${text.substring(0, 300)}`);
     }
 
-    console.log(`Message sent successfully to ${phone}`);
-    return true;
+    if (response.ok && data.status) {
+      console.log("Message sent successfully!");
+      return true;
+    } else {
+      console.error(`Failed to send message: ${response.status} ${response.statusText}`);
+      console.error("Response data:", data);
+      return false;
+    }
   } catch (error) {
     console.error("Error sending Wablas message:", error);
     return false;
