@@ -55,6 +55,9 @@ export async function POST(request: NextRequest) {
     const routingHistory = chatHistoryStore.getHistory(actualSessionId, 2);
     const routing = await chatService.routeQuery(message, routingHistory.getMessages());
 
+    // Log the routing response for debugging (can be removed in production)
+    // console.log("Routing response:", JSON.stringify(routing, null, 2));
+
     // Step 2: Update session type based on routing
     chatHistoryStore.updateMetadata(actualSessionId, {
       sessionType: routing.action === "rag" ? "rag" : "general",
@@ -116,7 +119,11 @@ async function handleRAGQuery(
     // Extract queries from routing
     const expandedQuery = routing.expanded_query || message; // Indonesian - for evaluation agent
     const ragOptimizedQuery = routing.rag_optimized_query || message; // Indonesian - for ChromaDB
-    const fixedGrammar = routing.fixed_grammar || message; // User's language - for LLM
+    let fixedGrammar = routing.fixed_grammar || message; // User's language - for LLM
+    
+    // Append language instruction to fixedGrammar to ensure language consistency
+    fixedGrammar = `!ANSWER BASED OFF THE LANGUAGE OF THE QUERY EVEN THOUGH THE CONTEXT ARE ALWAYS IN INDONESIAN
+    ${fixedGrammar}`;
 
     // Process RAG query with full pipeline (chunk expansion, agent evaluation, merging)
     const { contextPrompt, rationale, sources } =

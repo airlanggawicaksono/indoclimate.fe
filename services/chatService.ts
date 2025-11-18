@@ -323,6 +323,10 @@ query: ${message}`;
     context?: string,
     onStream?: (chunk: string) => void
   ): Promise<string> {
+    // Prepend language instruction to force LLM to match query language
+    const messageWithInstruction = `!ANSWER BASED OFF THE LANGUAGE OF THE QUERY
+query: ${message}`;
+
     const llm = this.createLLM(this.agentConfig);
 
     const systemPrompt = context
@@ -331,7 +335,7 @@ query: ${message}`;
 
     const messages = [
       new SystemMessage(systemPrompt),
-      new HumanMessage(message),
+      new HumanMessage(messageWithInstruction),
     ];
 
     if (this.agentConfig.streaming && onStream) {
