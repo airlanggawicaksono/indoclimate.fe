@@ -63,26 +63,26 @@ CONTEXT AWARENESS:
 Keluaran SELALU berupa JSON yang valid.
 
 ATURAN PENTING - GUNAKAN RAG ("action":"rag") untuk SEMUA pertanyaan tentang:
-✅ PERATURAN/HUKUM: Perda, Pergub, Perbup, Perwali, UU, PP, Perpres, Permen, pasal, ayat, G20 atau Peratruan iklim internasional lain nya
-✅ IKLIM: Perubahan iklim, climate change, pemanasan global, emisi, karbon, GRK
-✅ LINGKUNGAN: Pengelolaan lingkungan, pencemaran, konservasi, ekosistem, biodiversitas
-✅ BENCANA: Bencana alam, mitigasi bencana, penanggulangan bencana, tanggap darurat
-✅ ENERGI: Energi terbarukan, energi hijau, listrik, solar, angin, biomassa
-✅ SAMPAH/LIMBAH: Pengelolaan sampah, daur ulang, limbah, sanitasi
-✅ AIR: Pengelolaan air, banjir, drainase, DAS, irigasi
-✅ KEHUTANAN: Hutan, deforestasi, reboisasi, lahan
-✅ PERTANIAN: Pertanian berkelanjutan, lahan pertanian
-✅ INDUSTRI: Industri hijau, izin industri, standar emisi industri
-✅ TRANSPORTASI: Transportasi berkelanjutan, emisi kendaraan
-✅ SANKSI/DENDA: Hukuman, pidana, perdata terkait lingkungan/iklim
-✅ IZIN/PROSEDUR: Perizinan, persyaratan, tata cara
-✅ KEBIJAKAN: Kebijakan pemerintah tentang iklim/lingkungan
-✅ FAKTA/DATA: Pertanyaan yang butuh data faktual dari dokumen
+ PERATURAN/HUKUM: Perda, Pergub, Perbup, Perwali, UU, PP, Perpres, Permen, pasal, ayat, G20 atau Peratruan iklim internasional lain nya
+ IKLIM: Perubahan iklim, climate change, pemanasan global, emisi, karbon, GRK
+ LINGKUNGAN: Pengelolaan lingkungan, pencemaran, konservasi, ekosistem, biodiversitas
+ BENCANA: Bencana alam, mitigasi bencana, penanggulangan bencana, tanggap darurat
+ ENERGI: Energi terbarukan, energi hijau, listrik, solar, angin, biomassa
+ SAMPAH/LIMBAH: Pengelolaan sampah, daur ulang, limbah, sanitasi
+ AIR: Pengelolaan air, banjir, drainase, DAS, irigasi
+ KEHUTANAN: Hutan, deforestasi, reboisasi, lahan
+ PERTANIAN: Pertanian berkelanjutan, lahan pertanian
+ INDUSTRI: Industri hijau, izin industri, standar emisi industri
+ TRANSPORTASI: Transportasi berkelanjutan, emisi kendaraan
+ SANKSI/DENDA: Hukuman, pidana, perdata terkait lingkungan/iklim
+ IZIN/PROSEDUR: Perizinan, persyaratan, tata cara
+ KEBIJAKAN: Kebijakan pemerintah tentang iklim/lingkungan
+ FAKTA/DATA: Pertanyaan yang butuh data faktual dari dokumen
 
 JANGAN GUNAKAN RAG ("action":"no_rag") HANYA untuk:
-❌ Sapaan: "halo", "hi", "selamat pagi", "hello", "good morning"
-❌ Ucapan terima kasih: "terima kasih", "makasih", "thank you", "thanks"
-❌ Pertanyaan tentang sistem: "kamu siapa?", "bagaimana cara kamu bekerja?", "who are you?", "how do you work?"
+ Sapaan: "halo", "hi", "selamat pagi", "hello", "good morning"
+ Ucapan terima kasih: "terima kasih", "makasih", "thank you", "thanks"
+ Pertanyaan tentang sistem: "kamu siapa?", "bagaimana cara kamu bekerja?", "who are you?", "how do you work?"
 
 DEFAULT: Jika ragu, GUNAKAN RAG!
 
