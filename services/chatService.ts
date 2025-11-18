@@ -232,6 +232,32 @@ Response format:
   }
 
   /**
+   * General purpose chat WITHOUT streaming (for webhooks)
+   * Uses same model and temperature as generalChat but returns full response at once
+   */
+  async generalChatNonStreaming(
+    message: string,
+    history?: BaseMessage[]
+  ): Promise<string> {
+    // Create non-streaming version of general config
+    const nonStreamingConfig: ChatConfig = {
+      ...this.generalConfig,
+      streaming: false,
+    };
+
+    const llm = this.createLLM(nonStreamingConfig);
+
+    const messages = [
+      new SystemMessage(this.getGeneralSystemPrompt()),
+      ...(history || []),
+      new HumanMessage(message),
+    ];
+
+    const response = await llm.invoke(messages);
+    return response.content.toString();
+  }
+
+  /**
    * Agent chat for RAG and document processing
    * Uses gpt-4.1-mini-2025-04-14 with temperature 0
    */

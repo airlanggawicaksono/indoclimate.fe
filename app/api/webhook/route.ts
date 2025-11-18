@@ -62,31 +62,28 @@ async function processRAGQueryNonStreaming(
 
   const history = chatHistoryStore.getHistory(sessionId, 2);
 
-  // Get full response from general chat (non-streaming)
-  let fullResponse = "";
-  await chatService.generalChat(
+  // Get full response from general chat (non-streaming agent)
+  const fullResponse = await chatService.generalChatNonStreaming(
     contextPrompt,
-    (chunk: string) => {
-      fullResponse += chunk;
-    },
     history.getMessages()
   );
 
   // Append source references
+  let responseWithSources = fullResponse;
   if (sources.length > 0) {
-    fullResponse += "\n\n**Referensi:**\n\n";
+    responseWithSources += "\n\n**Referensi:**\n\n";
     sources.forEach((source, idx) => {
       const sourceLink = `[${idx + 1}] ${source.jenis}, ${source.nomor}, ${source.tahun}`;
       const viewLink = source.view_link || "#";
-      fullResponse += `[${sourceLink}](${viewLink})\n\n`;
+      responseWithSources += `[${sourceLink}](${viewLink})\n\n`;
     });
   }
 
   // Save to history
   history.addHumanMessage(message);
-  history.addAIMessage(fullResponse);
+  history.addAIMessage(responseWithSources);
 
-  return { response: fullResponse, sources };
+  return { response: responseWithSources, sources };
 }
 
 /**
@@ -95,12 +92,9 @@ async function processRAGQueryNonStreaming(
 async function processGeneralChatNonStreaming(message: string, sessionId: string): Promise<string> {
   const history = chatHistoryStore.getHistory(sessionId, 2);
 
-  let fullResponse = "";
-  await chatService.generalChat(
+  // Use non-streaming agent directly
+  const fullResponse = await chatService.generalChatNonStreaming(
     message,
-    (chunk: string) => {
-      fullResponse += chunk;
-    },
     history.getMessages()
   );
 
