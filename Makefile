@@ -1,4 +1,4 @@
-.PHONY: dev deploy run-prod status logs nginx-setup
+.PHONY: dev run-prod status logs nginx-setup
 
 PROJECT_DIR ?= /var/www/html/indoclimate.fe
 APP_NAME ?= indoclimate-chat
@@ -7,15 +7,11 @@ DOMAIN ?= chat.indoclimate.id
 dev:
 	cd $(PROJECT_DIR) && npm run dev
 
-deploy:
-	cd $(PROJECT_DIR) && npm run build
-	cd $(PROJECT_DIR) && npx pm2 reload $(APP_NAME)
-	@echo "Deployed at $$(date)"
-
 run-prod:
 	@mkdir -p /tmp/logs
-	cd $(PROJECT_DIR) && npx pm2 start ecosystem.config.js --env production
-	@echo "Started at $$(date)"
+	cd $(PROJECT_DIR) && npm run build
+	cd $(PROJECT_DIR) && npx pm2 reload $(APP_NAME) || npx pm2 start ecosystem.config.js
+	@echo "Deployed at $$(date)"
 
 status:
 	cd $(PROJECT_DIR) && npx pm2 status
