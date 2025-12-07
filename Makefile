@@ -5,11 +5,11 @@ APP_NAME ?= indoclimate-chat
 DOMAIN ?= chat.indoclimate.id
 
 dev:
-	cd $(PROJECT_DIR) && npm run dev
+	cd $(PROJECT_DIR) && mise exec -- npm run dev
 
 run-prod:
-	cd $(PROJECT_DIR) && npm run build
-	cd $(PROJECT_DIR) && npx pm2 reload $(APP_NAME) || npx pm2 start npm --name $(APP_NAME) -- start
+	cd $(PROJECT_DIR) && mise exec -- npm run build
+	cd $(PROJECT_DIR) && mise exec -- npx pm2 reload $(APP_NAME) || mise exec -- npx pm2 start npm --name $(APP_NAME) -- start
 	@echo "Deployed at $$(date)"
 
 status:
