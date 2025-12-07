@@ -1,16 +1,26 @@
-.PHONY: dev run-prod status logs nginx-setup
+.PHONY: dev setup run-prod stop status logs nginx-setup
 
 PROJECT_DIR ?= /var/www/html/indoclimate.fe
 APP_NAME ?= indoclimate-chat
 DOMAIN ?= chat.indoclimate.id
+NODE_VERSION ?= 20.18.1
+
+setup:
+	cd $(PROJECT_DIR) && mise use node@$(NODE_VERSION)
+	cd $(PROJECT_DIR) && mise install
+	@echo "Node $(NODE_VERSION) installed and configured"
 
 dev:
 	cd $(PROJECT_DIR) && mise exec -- npm run dev
 
 run-prod:
 	cd $(PROJECT_DIR) && mise exec -- npm run build
-	cd $(PROJECT_DIR) && mise exec -- npx pm2 reload $(APP_NAME) || mise exec -- npx pm2 start npm --name $(APP_NAME) -- start
+	cd $(PROJECT_DIR) && npx pm2 reload $(APP_NAME) || npx pm2 start --interpreter bash -c "cd $(PROJECT_DIR) && mise exec -- npm start" --name $(APP_NAME)
 	@echo "Deployed at $$(date)"
+
+stop:
+	npx pm2 stop $(APP_NAME)
+	npx pm2 delete $(APP_NAME)
 
 status:
 	npx pm2 status
