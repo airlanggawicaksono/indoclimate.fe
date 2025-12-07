@@ -26,7 +26,7 @@ status:
 	npx pm2 status
 
 logs:
-	npx pm2 logs $(APP_NAME)
+	npx pm2 logs $(APP_NAME) --lines 50
 
 nginx-setup:
 	sudo cp $(PROJECT_DIR)/nginx.conf /etc/nginx/sites-available/indoclimate
