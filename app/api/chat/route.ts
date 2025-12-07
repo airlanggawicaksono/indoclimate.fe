@@ -304,3 +304,29 @@ query: ${message}`;
     },
   });
 }
+
+// ============================================
+// Automatic Web Chat Session History Cleanup
+// ============================================
+
+/**
+ * Clear inactive web chat session histories every 20 seconds
+ * Only clears sessions that have been inactive for more than 20 seconds
+ */
+if (typeof global !== 'undefined') {
+  // Only run in server environment
+  const webCleanupInterval = setInterval(() => {
+    const { sessionStorage } = require('@/services/SessionStorage');
+    const clearedCount = sessionStorage.clearInactiveSessions(20000); // 20 seconds
+    if (clearedCount > 0) {
+      console.log(`[Web Chat Cleanup] Cleared ${clearedCount} inactive web session histories (>20s inactive)`);
+    }
+  }, 20000); // Run every 20 seconds
+
+  // Ensure cleanup doesn't prevent server shutdown
+  if (typeof webCleanupInterval.unref === 'function') {
+    webCleanupInterval.unref();
+  }
+
+  console.log('[Web Chat Cleanup] Automatic cleanup interval started (every 20 seconds for sessions inactive >20s)');
+}

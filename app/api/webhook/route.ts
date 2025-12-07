@@ -143,8 +143,18 @@ query: ${message}`;
 }
 
 /**
+ * Create a timeout promise that rejects after specified milliseconds
+ */
+function createTimeout(ms: number): Promise<never> {
+  return new Promise((_, reject) => {
+    setTimeout(() => reject(new Error("Request timeout")), ms);
+  });
+}
+
+/**
  * Webhook endpoint for Wablas
  * POST /api/webhook
+ * Includes 20-second timeout to prevent hanging
  */
 export async function POST(req: NextRequest) {
   try {
@@ -183,41 +193,64 @@ export async function POST(req: NextRequest) {
     const sessionId = `wablass_${targetPhone}`;
 
     try {
-      // Step 1: Get last 2 messages (1 pair) for routing context
-      const routingHistory = chatHistoryStore.getHistory(sessionId, 2);
-      const routing = await chatService.routeQuery(userMessage, routingHistory.getMessages());
-      console.log("Routing result:", routing);
+      // Wrap processing in a timeout (20 seconds)
+      const processingPromise = (async () => {
+        // Step 1: Get last 2 messages (1 pair) for routing context
+        const routingHistory = chatHistoryStore.getHistory(sessionId, 2);
+        const routing = await chatService.routeQuery(userMessage, routingHistory.getMessages());
+        console.log("Routing result:", routing);
 
-      let responseText: string;
+        let responseText: string;
 
-      // Step 2: Process based on routing decision
-      if (routing.action === "rag") {
-        console.log("Using RAG mode");
-        const { response } = await processRAGQueryNonStreaming(userMessage, routing, sessionId, true); // isWablas=true for plain text references
-        responseText = response;
-      } else {
-        console.log("Using general chat mode");
-        responseText = await processGeneralChatNonStreaming(userMessage, sessionId);
-      }
+        // Step 2: Process based on routing decision
+        if (routing.action === "rag") {
+          console.log("Using RAG mode");
+          const { response } = await processRAGQueryNonStreaming(userMessage, routing, sessionId, true); // isWablas=true for plain text references
+          responseText = response;
+        } else {
+          console.log("Using general chat mode");
+          responseText = await processGeneralChatNonStreaming(userMessage, sessionId);
+        }
 
-      // Step 3: Send response via Wablas
-      const sent = await sendWablasMessage(targetPhone, responseText);
+        // Step 3: Send response via Wablas
+        const sent = await sendWablasMessage(targetPhone, responseText);
 
-      if (!sent) {
-        console.error("Failed to send response to user");
-        // Try to send error message
-        await sendWablasMessage(
-          targetPhone,
-          "Maaf, terjadi kesalahan dalam mengirim respons. Silakan coba lagi."
-        );
-      }
+        if (!sent) {
+          console.error("Failed to send response to user");
+          // Try to send error message
+          await sendWablasMessage(
+            targetPhone,
+            "Maaf, terjadi kesalahan dalam mengirim respons. Silakan coba lagi."
+          );
+        }
 
-      return NextResponse.json({
-        status: "success",
-        message: "Response sent",
-      });
+        return { status: "success", message: "Response sent" };
+      })();
+
+      // Race between processing and timeout (20 seconds)
+      const result = await Promise.race([
+        processingPromise,
+        createTimeout(20000),
+      ]);
+
+      return NextResponse.json(result);
     } catch (error) {
       console.error("Error processing webhook:", error);
+
+      // Check if it's a timeout error
+      if (error instanceof Error && error.message === "Request timeout") {
+        console.error("Request timed out after 20 seconds");
+        // Send timeout message to user
+        await sendWablasMessage(
+          targetPhone,
+          "Maaf, permintaan memakan waktu terlalu lama. Silakan coba lagi dengan pertanyaan yang lebih spesifik."
+        );
+
+        return NextResponse.json(
+          { error: "Request timeout" },
+          { status: 504 }
+        );
+      }
 
       // Send error message to user
       await sendWablasMessage(
@@ -237,4 +270,30 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
+}
+
+// ============================================
+// Automatic Wablas Session History Cleanup
+// ============================================
+
+/**
+ * Clear Wablas session histories every 20 seconds
+ * This prevents history pollution and keeps conversations fresh
+ */
+if (typeof global !== 'undefined') {
+  // Only run in server environment
+  const cleanupInterval = setInterval(() => {
+    const { sessionStorage } = require('@/services/SessionStorage');
+    const clearedCount = sessionStorage.clearSessionMessagesByPattern('wablass_');
+    if (clearedCount > 0) {
+      console.log(`[Wablas Cleanup] Cleared ${clearedCount} Wablas session histories`);
+    }
+  }, 20000); // Run every 20 seconds
+
+  // Ensure cleanup doesn't prevent server shutdown
+  if (typeof cleanupInterval.unref === 'function') {
+    cleanupInterval.unref();
+  }
+
+  console.log('[Wablas Cleanup] Automatic cleanup interval started (every 20 seconds)');
 }

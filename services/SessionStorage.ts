@@ -305,6 +305,56 @@ class SessionStorage {
   }
 
   /**
+   * Clear only the messages from a session (keep the session metadata)
+   */
+  clearSessionMessages(sessionId: string): void {
+    const session = this.getSession(sessionId);
+    if (session) {
+      session.messages = [];
+      this.saveSession(session);
+    }
+  }
+
+  /**
+   * Clear messages from all sessions matching a pattern (e.g., "wablass_")
+   */
+  clearSessionMessagesByPattern(pattern: string): number {
+    let clearedCount = 0;
+    for (const [sessionId, session] of this.sessions.entries()) {
+      if (sessionId.startsWith(pattern)) {
+        session.messages = [];
+        this.saveSession(session);
+        clearedCount++;
+      }
+    }
+    return clearedCount;
+  }
+
+  /**
+   * Clear sessions that have been inactive for longer than the specified milliseconds
+   * @param inactiveThresholdMs - Time in milliseconds (default: 20000 = 20 seconds)
+   * @returns Number of sessions cleared
+   */
+  clearInactiveSessions(inactiveThresholdMs: number = 20000): number {
+    const now = new Date();
+    let clearedCount = 0;
+
+    for (const [_, session] of this.sessions.entries()) {
+      const lastActiveTime = session.metadata.lastActive.getTime();
+      const inactiveTime = now.getTime() - lastActiveTime;
+
+      // If session has been inactive longer than threshold, clear its messages
+      if (inactiveTime > inactiveThresholdMs) {
+        session.messages = [];
+        this.saveSession(session);
+        clearedCount++;
+      }
+    }
+
+    return clearedCount;
+  }
+
+  /**
    * Clear a session
    */
   clearSession(sessionId: string): void {
@@ -319,7 +369,7 @@ class SessionStorage {
         }
       }
     }
-    
+
     this.sessions.delete(sessionId);
   }
 
