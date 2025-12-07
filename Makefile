@@ -15,7 +15,7 @@ dev:
 
 run-prod:
 	cd $(PROJECT_DIR) && mise exec -- npm run build
-	cd $(PROJECT_DIR) && npx pm2 reload $(APP_NAME) || npx pm2 start --interpreter bash -c "cd $(PROJECT_DIR) && mise exec -- npm start" --name $(APP_NAME)
+	cd $(PROJECT_DIR) && npx pm2 reload ecosystem.config.js --update-env || npx pm2 start ecosystem.config.js
 	@echo "Deployed at $$(date)"
 
 stop:
