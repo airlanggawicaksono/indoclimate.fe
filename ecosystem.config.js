@@ -6,6 +6,10 @@ module.exports = {
     cwd: '/var/www/html/indoclimate.fe',
     instances: 1,
     autorestart: true,
-    max_memory_restart: '1G'
+    max_memory_restart: '1G',
+    env: {
+      PORT: 5324,
+      NODE_ENV: 'production'
+    }
   }]
 }
