@@ -8,16 +8,15 @@ dev:
 	cd $(PROJECT_DIR) && npm run dev
 
 run-prod:
-	@mkdir -p /tmp/logs
 	cd $(PROJECT_DIR) && npm run build
-	cd $(PROJECT_DIR) && npx pm2 reload $(APP_NAME) || npx pm2 start ecosystem.config.js
+	cd $(PROJECT_DIR) && npx pm2 reload $(APP_NAME) || npx pm2 start npm --name $(APP_NAME) -- start
 	@echo "Deployed at $$(date)"
 
 status:
-	cd $(PROJECT_DIR) && npx pm2 status
+	npx pm2 status
 
 logs:
-	cd $(PROJECT_DIR) && npx pm2 logs $(APP_NAME)
+	npx pm2 logs $(APP_NAME)
 
 nginx-setup:
 	sudo cp $(PROJECT_DIR)/nginx.conf /etc/nginx/sites-available/indoclimate
