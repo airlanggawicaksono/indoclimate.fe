@@ -13,6 +13,7 @@ deploy:
 	@echo "Deployed at $$(date)"
 
 run-prod:
+	@mkdir -p /tmp/logs
 	cd $(PROJECT_DIR) && npx pm2 start ecosystem.config.js --env production
 	@echo "Started at $$(date)"
 

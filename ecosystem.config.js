@@ -22,8 +22,8 @@ module.exports = {
       },
 
       // Logging configuration
-      out_file: './logs/pm2-out.log',
-      error_file: './logs/pm2-error.log',
+      out_file: '/tmp/logs/indoclimate-chat-out.log',
+      error_file: '/tmp/logs/indoclimate-chat-error.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       merge_logs: true,
 
@@ -43,16 +43,4 @@ module.exports = {
       watch: false,
     },
   ],
-
-  // Optional: PM2 Deploy configuration
-  deploy: {
-    production: {
-      user: 'deploy',
-      host: 'chat.indoclimate.id',
-      ref: 'origin/main',
-      repo: 'git@github.com:your-repo/indoclimate.fe.git',
-      path: '/var/www/indoclimate',
-      'post-deploy': 'npm install && npm run build && pm2 reload ecosystem.config.js --env production',
-    },
-  },
 };
