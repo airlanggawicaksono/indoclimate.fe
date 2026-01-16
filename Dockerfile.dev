@@ -1,0 +1,20 @@
+# Development Dockerfile (no PM2, with hot reload)
+FROM node:20.18.1-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including devDependencies)
+RUN npm ci
+
+# Copy source code (will be overridden by volume mount in docker-compose)
+COPY . .
+
+# Expose the development port
+EXPOSE 3000
+
+# Run Next.js in development mode (hot reload enabled)
+CMD ["npm", "run", "dev"]

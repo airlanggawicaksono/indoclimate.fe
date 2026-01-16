@@ -1,0 +1,16 @@
+services:
+  app:
+    build: .
+    container_name: ${APP_CONTAINER_NAME}
+    env_file:
+      - .env
+    ports:
+      - "${PORT}:${PORT}"
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    name: ${NETWORK_NAME}
+    driver: bridge

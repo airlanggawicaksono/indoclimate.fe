@@ -1,0 +1,20 @@
+services:
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: ${CHROMA_CONTAINER_NAME}
+    volumes:
+      - ${DB_PATH}:/data
+    ports:
+      - "${CHROMA_EXTERNAL_PORT}:8000"
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+      - ALLOW_RESET=TRUE
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    name: ${NETWORK_NAME}
+    driver: bridge
