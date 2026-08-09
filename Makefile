@@ -5,7 +5,7 @@ SHELL := /bin/bash
 include $(PROJECT_DIR)/.env
 export
 
-.PHONY: help dev-up dev-down dev-logs dev-logs-db prod-up prod-down prod-logs prod-logs-db db-up db-down db-logs clean nginx-setup nginx-reload
+.PHONY: help dev-up dev-down dev-logs dev-logs-db prod-up prod-down prod-logs prod-logs-db db-up db-down db-logs logs-wablas clean nginx-setup nginx-reload
 
 help:
 	@echo "=== Development ==="
@@ -24,6 +24,9 @@ help:
 	@echo "  make db-up       - Start chromadb only"
 	@echo "  make db-down     - Stop chromadb"
 	@echo "  make db-logs     - Show chromadb logs"
+	@echo ""
+	@echo "=== Wablas ==="
+	@echo "  make logs-wablas - Follow Wablas webhook logs only"
 	@echo ""
 	@echo "=== Other ==="
 	@echo "  make clean       - Remove containers, images, volumes"
@@ -85,6 +88,12 @@ db-down:
 db-logs:
 	cd $(PROJECT_DIR)
 	docker compose -f docker-compose.chromadb.yaml logs -f
+
+# --- Wablas ---
+
+# ponytail: greps the container's stdout, so it works for dev and prod alike.
+logs-wablas:
+	docker logs -f --tail 200 $(APP_CONTAINER_NAME) 2>&1 | grep --line-buffered WABLAS
 
 # --- Clean ---
 
