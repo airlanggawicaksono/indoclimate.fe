@@ -6,8 +6,8 @@
 echo "=== Testing Wablas API ==="
 echo ""
 
-# Load credentials from .env.local
-source .env.local
+# Load credentials from .env
+source .env
 
 echo "API Key: ${WABLASS_API_KEY:0:20}... (truncated)"
 echo "Secret: $WABLASS_WEBHOOK_SECRET"
