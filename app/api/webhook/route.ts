@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { chatService } from "@/services/chatService";
 import { ragProcessingService } from "@/services/ragProcessingService";
 import { chatHistoryStore } from "@/services/chatHistoryService";
+import { wablasLog } from "@/utils/wablasLogger";
 
 // Wablas credentials from environment
 const WABLASS_API_KEY = process.env.WABLASS_API_KEY;
@@ -13,15 +14,18 @@ const WABLAS_API_URL = "https://jogja.wablas.com/api/send-message";
  */
 async function sendWablasMessage(phone: string, message: string): Promise<boolean> {
   if (!WABLASS_API_KEY || !WABLASS_WEBHOOK_SECRET) {
-    console.error("WABLASS_API_KEY or WABLASS_WEBHOOK_SECRET not configured");
+    wablasLog.error("WABLASS_API_KEY or WABLASS_WEBHOOK_SECRET not configured");
     return false;
   }
 
-  console.log(`Sending message to: ${phone}`);
-  console.log(`Message preview: ${message.substring(0, 100)}...`);
-  console.log(`API Key present: ${!!WABLASS_API_KEY}`);
-  console.log(`Secret present: ${!!WABLASS_WEBHOOK_SECRET}`);
+  wablasLog.info("SEND -> outbound", {
+    url: WABLAS_API_URL,
+    phone,
+    length: message.length,
+    preview: message.substring(0, 100),
+  });
 
+  const startedAt = Date.now();
   try {
     const response = await fetch(WABLAS_API_URL, {
       method: "POST",
@@ -35,26 +39,31 @@ async function sendWablasMessage(phone: string, message: string): Promise<boolea
       }),
     });
 
+    const raw = await response.text();
     let data: any = {};
     try {
-      data = await response.json();
-      console.log("Response JSON:", data);
-    } catch (e) {
-      console.error("JSON parse error:", e);
-      const text = await response.text();
-      console.error(`Non-JSON response from Wablas: ${text.substring(0, 300)}`);
+      data = JSON.parse(raw);
+    } catch {
+      wablasLog.error("SEND <- non-JSON response", raw.substring(0, 300));
     }
 
     if (response.ok && data.status) {
-      console.log("Message sent successfully!");
+      wablasLog.info("SEND <- ok", { ms: Date.now() - startedAt, body: raw.substring(0, 300) });
       return true;
-    } else {
-      console.error(`Failed to send message: ${response.status} ${response.statusText}`);
-      console.error("Response data:", data);
-      return false;
     }
+
+    wablasLog.error("SEND <- failed", {
+      ms: Date.now() - startedAt,
+      status: response.status,
+      statusText: response.statusText,
+      body: raw.substring(0, 300),
+    });
+    return false;
   } catch (error) {
-    console.error("Error sending Wablas message:", error);
+    wablasLog.error("SEND <- network error", {
+      ms: Date.now() - startedAt,
+      error: (error as Error).message,
+    });
     return false;
   }
 }
@@ -158,15 +167,19 @@ function createTimeout(ms: number): Promise<never> {
  */
 export async function POST(req: NextRequest) {
   try {
-    console.log("Webhook called!");
+    wablasLog.info("RECV -> webhook hit", {
+      ip: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip"),
+      ua: req.headers.get("user-agent"),
+      contentType: req.headers.get("content-type"),
+    });
 
     // Parse incoming webhook data
     const data = await req.json();
-    console.log("Received data:", data);
+    wablasLog.info("RECV -> payload", data);
 
     // Skip self-sent messages
     if (data.isFromMe) {
-      console.log("Skipped self-sent message");
+      wablasLog.info("RECV -> skipped self-sent message");
       return NextResponse.json({
         status: "success",
         message: "Skipped self-sent message",
@@ -179,15 +192,18 @@ export async function POST(req: NextRequest) {
     const deviceId = data.deviceId; // device ID that received the message
 
     if (!userMessage || !targetPhone) {
-      console.warn("Missing fields: message or phone");
+      wablasLog.warn("RECV -> missing fields: message or phone", data);
       return NextResponse.json(
         { error: "Missing required fields: message and phone" },
         { status: 400 }
       );
     }
 
-    console.log(`Processing message from ${targetPhone}: ${userMessage.substring(0, 50)}...`);
-    console.log(`Device ID: ${deviceId}`);
+    wablasLog.info("RECV -> processing", {
+      from: targetPhone,
+      deviceId,
+      message: userMessage.substring(0, 200),
+    });
 
     // Create session ID based on phone number
     const sessionId = `wablass_${targetPhone}`;
@@ -198,25 +214,27 @@ export async function POST(req: NextRequest) {
         // Step 1: Get last 2 messages (1 pair) for routing context
         const routingHistory = chatHistoryStore.getHistory(sessionId, 2);
         const routing = await chatService.routeQuery(userMessage, routingHistory.getMessages());
-        console.log("Routing result:", routing);
+        wablasLog.info("PROC -> routing result", routing);
 
         let responseText: string;
 
         // Step 2: Process based on routing decision
         if (routing.action === "rag") {
-          console.log("Using RAG mode");
           const { response } = await processRAGQueryNonStreaming(userMessage, routing, sessionId, true); // isWablas=true for plain text references
           responseText = response;
         } else {
-          console.log("Using general chat mode");
           responseText = await processGeneralChatNonStreaming(userMessage, sessionId);
         }
+        wablasLog.info("PROC -> answer ready", {
+          mode: routing.action,
+          length: responseText.length,
+        });
 
         // Step 3: Send response via Wablas
         const sent = await sendWablasMessage(targetPhone, responseText);
 
         if (!sent) {
-          console.error("Failed to send response to user");
+          wablasLog.error("PROC -> failed to send response to user", { phone: targetPhone });
           // Try to send error message
           await sendWablasMessage(
             targetPhone,
@@ -235,11 +253,11 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json(result);
     } catch (error) {
-      console.error("Error processing webhook:", error);
+      wablasLog.error("PROC -> error processing webhook", (error as Error).stack);
 
       // Check if it's a timeout error
       if (error instanceof Error && error.message === "Request timeout") {
-        console.error("Request timed out after 20 seconds");
+        wablasLog.error("PROC -> timed out after 20s", { phone: targetPhone });
         // Send timeout message to user
         await sendWablasMessage(
           targetPhone,
@@ -264,7 +282,7 @@ export async function POST(req: NextRequest) {
       );
     }
   } catch (error) {
-    console.error("Webhook error:", error);
+    wablasLog.error("RECV -> invalid request / body parse failed", (error as Error).message);
     return NextResponse.json(
       { error: "Invalid request" },
       { status: 400 }
@@ -286,7 +304,7 @@ if (typeof global !== 'undefined') {
     const { sessionStorage } = require('@/services/SessionStorage');
     const clearedCount = sessionStorage.clearSessionMessagesByPattern('wablass_');
     if (clearedCount > 0) {
-      console.log(`[Wablas Cleanup] Cleared ${clearedCount} Wablas session histories`);
+      wablasLog.info(`CLEANUP -> cleared ${clearedCount} session histories`);
     }
   }, 20000); // Run every 20 seconds
 
@@ -295,5 +313,5 @@ if (typeof global !== 'undefined') {
     cleanupInterval.unref();
   }
 
-  console.log('[Wablas Cleanup] Automatic cleanup interval started (every 20 seconds)');
+  wablasLog.info(`CLEANUP -> interval started (20s). Log file: ${wablasLog.file}`);
 }
